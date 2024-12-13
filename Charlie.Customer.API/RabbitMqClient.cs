@@ -15,7 +15,7 @@ namespace Charlie.Customer.API
 
 		public RabbitMqClient(IConfiguration configuration)
 		{
-			InitializeAsync(configuration);
+			InitializeAsync(configuration).GetAwaiter().GetResult();
 		}
 
 		public async Task InitializeAsync(IConfiguration configuration)
@@ -28,6 +28,9 @@ namespace Charlie.Customer.API
 			};
 			_connection = await factory.CreateConnectionAsync();
 			_channel = await _connection.CreateChannelAsync();
+
+			AppDomain.CurrentDomain.ProcessExit += (s, e) => Dispose();
+
 		}
 
 		public async Task PublishAsync(string queueName, object message)
@@ -58,6 +61,12 @@ namespace Charlie.Customer.API
 			_channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer);
 
 			await Task.CompletedTask;
+		}
+
+		public void Dispose()
+		{
+			_channel?.Dispose();
+			_connection?.Dispose();
 		}
 	}
 }
